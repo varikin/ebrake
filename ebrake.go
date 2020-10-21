@@ -47,11 +47,24 @@ func (encoder *Encoder) EncodeFiles() error {
 			target: targetFile,
 		})
 	}
-	for _, video := range videos {
-		fmt.Println("handbrake.exe ", video.source, video.target)
+	if len(videos) == 0 {
+		fmt.Println("Did not find any videos re-encode.")
+	} else {
+		for _, video := range videos {
+			fmt.Println(encoder.getEncodeCommand(video))
+		}
 	}
 
 	return nil
+}
+
+func (encoder *Encoder) getEncodeCommand(video Video) string {
+	return fmt.Sprintf("%s %s -i %s -o %s",
+		encoder.config.HandBrakeCommand,
+		encoder.config.HandBrakeOptions,
+		video.source,
+		video.target,
+	)
 }
 
 // getVideoFiles finds and returns the list of video files in the given directory.
@@ -78,7 +91,7 @@ func (encoder *Encoder) isVideoFile(path string, info os.FileInfo) bool {
 	}
 
 	ext := filepath.Ext(path)
-	for _, ve := range encoder.config.SourceExtensions  {
+	for _, ve := range encoder.config.SourceExtensions {
 		if ve == ext {
 			return true
 		}
@@ -98,4 +111,3 @@ func (encoder *Encoder) getDestinationPath(videoPath string) (string, error) {
 	destinationPath = destinationPath + encoder.config.TargetExtension
 	return destinationPath, nil
 }
-

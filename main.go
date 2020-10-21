@@ -32,6 +32,8 @@ import (
 )
 
 type Config struct {
+	HandBrakeCommand string
+	HandBrakeOptions string
 	Source           string
 	Target           string
 	SourceExtensions []string
@@ -62,8 +64,10 @@ func main() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig() {
-	viper.SetDefault("SourceExtensions", []string{".mp4", ".mkv"})
+	viper.SetDefault("SourceExtensions", []string{".mp4", ".mkv", ".avi"})
 	viper.SetDefault("TargetExtension", ".mp4")
+	viper.SetDefault("HandBrakeCommand", "HandBrakeCLI.exe")
+	viper.SetDefault("HandBrakeOptions", "--encoder x264 --encoder-preset fast --optimize")
 
 	if cfgFile != "" {
 		// Use config file from the flag.
@@ -96,7 +100,7 @@ var rootCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		config := Config{
-			Source:      args[0],
+			Source: args[0],
 			Target: args[1],
 		}
 		if err := viper.Unmarshal(&config); err != nil {
