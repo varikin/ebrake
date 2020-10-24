@@ -31,6 +31,10 @@ import (
 	"os"
 )
 
+var (
+	version = "dev"
+)
+
 type Config struct {
 	HandBrakeCommand string
 	HandBrakeOptions string
@@ -97,6 +101,7 @@ func initConfig() {
 var rootCmd = &cobra.Command{
 	Use:   "ebrake",
 	Short: "Re-encodes a directory of movie files using Handbrake.",
+	Version: version,
 	Args:  cobra.ExactArgs(2),
 	Run: func(cmd *cobra.Command, args []string) {
 		config := Config{
