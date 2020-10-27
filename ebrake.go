@@ -24,9 +24,11 @@ func (encoder *Encoder) EncodeFiles() error {
 
 	info, err := os.Stat(encoder.config.Target)
 	if err != nil {
-		return err
-	}
-	if !info.IsDir() {
+		fmt.Println("Target directory does not exist; attempting to create it.")
+		if err2 := os.MkdirAll(encoder.config.Target, 0666); err2 != nil {
+			return errors.Wrap(err, "Target directory does not exist")
+		}
+	} else if !info.IsDir() {
 		return errors.New(encoder.config.Target + " is not a directory")
 	}
 

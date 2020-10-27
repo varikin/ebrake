@@ -8,7 +8,7 @@ import (
 )
 
 func Build() error {
-	return run("goreleaser build --snapshot --rm-dist")
+	return run("go build")
 }
 
 func run(cmd string) error {
