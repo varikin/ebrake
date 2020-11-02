@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -11,6 +12,8 @@ import (
 
 type Encoder struct {
 	config *Config
+	Source string
+	Target string
 }
 
 type Video struct {
@@ -22,14 +25,14 @@ type Video struct {
 // in the destination directory.
 func (encoder *Encoder) EncodeFiles() error {
 
-	info, err := os.Stat(encoder.config.Target)
+	info, err := os.Stat(encoder.Target)
 	if err != nil {
 		fmt.Println("Target directory does not exist; attempting to create it.")
-		if err2 := os.MkdirAll(encoder.config.Target, 0666); err2 != nil {
+		if err2 := os.MkdirAll(encoder.Target, 0666); err2 != nil {
 			return errors.Wrap(err, "Target directory does not exist")
 		}
 	} else if !info.IsDir() {
-		return errors.New(encoder.config.Target + " is not a directory")
+		return errors.New(encoder.Target + " is not a directory")
 	}
 
 	videoFiles, err := encoder.getVideoFiles()
@@ -51,29 +54,30 @@ func (encoder *Encoder) EncodeFiles() error {
 	}
 	if len(videos) == 0 {
 		fmt.Println("Did not find any videos re-encode.")
-	} else {
-		for _, video := range videos {
-			fmt.Println(encoder.getEncodeCommand(video))
+		return nil
+	}
+
+	options := strings.Fields(encoder.config.HandBrakeOptions)
+	for _, video := range videos {
+		args := append(options, "-i", video.source, "-o", video.target)
+		cmd := exec.Command(encoder.config.HandBrakeCommand, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		err = cmd.Run()
+		if err != nil {
+			return errors.Wrap(err, "failed to encode video: " + video.source)
 		}
 	}
 
 	return nil
 }
 
-func (encoder *Encoder) getEncodeCommand(video Video) string {
-	return fmt.Sprintf("%s %s -i %s -o %s",
-		encoder.config.HandBrakeCommand,
-		encoder.config.HandBrakeOptions,
-		video.source,
-		video.target,
-	)
-}
-
 // getVideoFiles finds and returns the list of video files in the given directory.
 // The test for video file is based on the file extension.
 func (encoder *Encoder) getVideoFiles() ([]string, error) {
 	var videoFiles []string
-	err := filepath.Walk(encoder.config.Source, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(encoder.Source, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			// TODO log error and return SkipDir?
 			return errors.Wrap(err, "failed to walk source directory")
@@ -103,11 +107,11 @@ func (encoder *Encoder) isVideoFile(path string, info os.FileInfo) bool {
 
 // getDestinationPath returns the path to the new file based at the destination.
 func (encoder *Encoder) getDestinationPath(videoPath string) (string, error) {
-	rel, err := filepath.Rel(encoder.config.Source, videoPath)
+	rel, err := filepath.Rel(encoder.Source, videoPath)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to find relative path to source file")
 	}
-	destinationPath := filepath.Join(encoder.config.Target, rel)
+	destinationPath := filepath.Join(encoder.Target, rel)
 	ext := filepath.Ext(destinationPath)
 	destinationPath = strings.TrimSuffix(destinationPath, ext)
 	destinationPath = destinationPath + encoder.config.TargetExtension
