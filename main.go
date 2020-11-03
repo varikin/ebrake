@@ -60,7 +60,6 @@ func main() {
 		os.Exit(0)
 	}
 
-
 	args := flag.Args()
 	if len(args) != 2 {
 		printUsage()
@@ -109,7 +108,7 @@ func loadConfig(configFile string) (*Config, error) {
 	if configFile != "" {
 		err := readConfigFile(config, configFile)
 		if err != nil {
-			return nil, errors.Wrap(err, "Unable to read config file: " + configFile)
+			return nil, errors.Wrap(err, "Unable to read config file: "+configFile)
 		}
 		return config, nil
 	}
@@ -123,9 +122,9 @@ func loadConfig(configFile string) (*Config, error) {
 	}
 	configFile = filepath.Join(home, ".ebrake.yaml")
 	err = readConfigFile(config, configFile)
-	if err != nil && !os.IsNotExist(err){
+	if err != nil && !os.IsNotExist(err) {
 		// Skipping File Does Not Exist error
-		return nil, errors.Wrap(err, "Unable to read config file: " + configFile)
+		return nil, errors.Wrap(err, "Unable to read config file: "+configFile)
 	}
 	// Return the config, either with defaults or with values from a file
 	return config, nil
@@ -138,4 +137,3 @@ func readConfigFile(config *Config, filename string) error {
 	}
 	return yaml.Unmarshal(file, config)
 }
-
