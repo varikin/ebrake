@@ -47,16 +47,28 @@ func (encoder *Encoder) EncodeFiles() error {
 		if err != nil {
 			return err
 		}
-		videos = append(videos, Video{
-			source: videoFile,
-			target: targetFile,
-		})
+
+		// Filter out targetFiles that exist
+		// TODO make this an option, like --force
+		exists, err := fileExists(targetFile)
+		if err != nil {
+			return err
+		}
+		if exists {
+			fmt.Println("Target file already exists, skipping: " + targetFile)
+		} else {
+			videos = append(videos, Video{
+				source: videoFile,
+				target: targetFile,
+			})
+		}
 	}
 	if len(videos) == 0 {
 		fmt.Println("Did not find any videos re-encode.")
 		return nil
 	}
 
+	// Encode each file
 	options := strings.Fields(encoder.config.HandBrakeOptions)
 	for _, video := range videos {
 		args := append(options, "-i", video.source, "-o", video.target)
@@ -66,11 +78,24 @@ func (encoder *Encoder) EncodeFiles() error {
 
 		err = cmd.Run()
 		if err != nil {
-			return errors.Wrap(err, "failed to encode video: " + video.source)
+			return errors.Wrap(err, "failed to encode video: "+video.source)
 		}
 	}
 
 	return nil
+}
+
+func fileExists(name string) (bool, error) {
+	_, err := os.Stat(name)
+
+	// No error means the file exists
+	if err == nil {
+		return true, nil
+	} else if os.IsNotExist(err) {
+		return false, nil
+	} else {
+		return false, errors.Wrap(err, "Unable to determine state of file: "+name)
+	}
 }
 
 // getVideoFiles finds and returns the list of video files in the given directory.
